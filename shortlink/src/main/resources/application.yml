@@ -33,4 +33,5 @@ management:
 
 shortlink:
   base-url: http://localhost:8080
-
+  node-id: ${SHORTLINK_NODE_ID:1}
+  custom-epoch: 1767225600000 # 2026-01-01T00:00:00Z UTC
