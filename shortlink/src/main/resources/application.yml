@@ -51,4 +51,11 @@ shortlink:
     l1-ttl-minutes: 10
     l2-ttl-hours: 24
     negative-ttl-seconds: 60
-
+  rate-limit:
+    enabled: ${SHORTLINK_RATE_LIMIT_ENABLED:true}
+    write:
+      capacity: 20
+      refill-tokens-per-second: 0.5
+    read:
+      capacity: 1000
+      refill-tokens-per-second: 500.0
