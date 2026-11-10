@@ -6,6 +6,8 @@ import com.shortlink.api.exception.AliasAlreadyExistsException;
 import com.shortlink.api.exception.InvalidUrlException;
 import com.shortlink.api.exception.LinkExpiredException;
 import com.shortlink.api.exception.ResourceNotFoundException;
+import com.shortlink.cache.CachedLink;
+import com.shortlink.cache.LinkCacheService;
 import com.shortlink.domain.Link;
 import com.shortlink.domain.LinkRepository;
 import com.shortlink.idgen.Base62Encoder;
@@ -23,6 +25,7 @@ import java.time.Instant;
 public class LinkService {
 
     private final LinkRepository linkRepository;
+    private final LinkCacheService linkCacheService;
     private final SnowflakeIdGenerator idGenerator;
     private final UrlValidator urlValidator;
     private final AliasValidator aliasValidator;
@@ -30,11 +33,13 @@ public class LinkService {
 
     public LinkService(
             LinkRepository linkRepository,
+            LinkCacheService linkCacheService,
             SnowflakeIdGenerator idGenerator,
             UrlValidator urlValidator,
             AliasValidator aliasValidator,
             @Value("${shortlink.base-url:http://localhost:8080}") String baseUrl) {
         this.linkRepository = linkRepository;
+        this.linkCacheService = linkCacheService;
         this.idGenerator = idGenerator;
         this.urlValidator = urlValidator;
         this.aliasValidator = aliasValidator;
@@ -74,6 +79,9 @@ public class LinkService {
 
         try {
             Link saved = linkRepository.saveAndFlush(link);
+            linkCacheService.putLink(
+                    saved.getShortCode(),
+                    CachedLink.of(saved.getLongUrl(), saved.isActive(), saved.getExpiresAt()));
             return mapToResponse(saved);
         } catch (DataIntegrityViolationException ex) {
             if (isCustom) {
@@ -83,20 +91,26 @@ public class LinkService {
         }
     }
 
-    @Transactional(readOnly = true)
+    /**
+     * Resolves redirect destination via Multi-Tier Cache (L1 Caffeine -> L2 Redis -> Postgres).
+     * Intentionally NOT @Transactional so L1/L2 cache hits acquire zero HikariCP DB connections.
+     */
     public String getDestinationUrl(String shortCode) {
-        Link link = linkRepository.findByShortCode(shortCode)
-                .orElseThrow(() -> new ResourceNotFoundException("Link not found: " + shortCode));
+        CachedLink cached = linkCacheService.getLink(shortCode);
 
-        if (!link.isActive()) {
+        if (cached.notFound()) {
+            throw new ResourceNotFoundException("Link not found: " + shortCode);
+        }
+
+        if (!cached.active()) {
             throw new LinkExpiredException("Link has been deactivated: " + shortCode);
         }
 
-        if (link.isExpired()) {
+        if (cached.isExpired()) {
             throw new LinkExpiredException("Link has expired: " + shortCode);
         }
 
-        return link.getLongUrl();
+        return cached.longUrl();
     }
 
     @Transactional(readOnly = true)
@@ -112,6 +126,7 @@ public class LinkService {
                 .orElseThrow(() -> new ResourceNotFoundException("Link not found: " + shortCode));
         link.setActive(false);
         linkRepository.save(link);
+        linkCacheService.evict(shortCode);
     }
 
     private LinkResponse mapToResponse(Link link) {
@@ -123,8 +138,6 @@ public class LinkService {
                 link.isCustom(),
                 link.isActive(),
                 link.getCreatedAt(),
-                link.getExpiresAt()
-        );
+                link.getExpiresAt());
     }
 }
-

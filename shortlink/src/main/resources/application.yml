@@ -21,6 +21,17 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          enabled: true
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
 
 management:
   endpoints:
@@ -35,3 +46,9 @@ shortlink:
   base-url: http://localhost:8080
   node-id: ${SHORTLINK_NODE_ID:1}
   custom-epoch: 1767225600000 # 2026-01-01T00:00:00Z UTC
+  cache:
+    l1-max-size: 10000
+    l1-ttl-minutes: 10
+    l2-ttl-hours: 24
+    negative-ttl-seconds: 60
+

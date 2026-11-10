@@ -16,24 +16,40 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: shortlink-redis
+    command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
   app:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: shortlink-app
     ports:
-      - "8080":"8080"
+      - "8080:8080"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shortlink
       SPRING_DATASOURCE_USERNAME: shortlink
       SPRING_DATASOURCE_PASSWORD: shortlink
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
       SHORTLINK_BASE_URL: http://localhost:8080
       SHORTLINK_NODE_ID: 1
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:
   postgres_data:
-
