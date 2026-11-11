@@ -1,6 +1,9 @@
 spring:
   application:
     name: shortlink
+  threads:
+    virtual:
+      enabled: true
   datasource:
     url: jdbc:postgresql://localhost:5432/shortlink
     username: shortlink
@@ -32,6 +35,11 @@ spring:
           max-active: 16
           max-idle: 8
           min-idle: 2
+
+server:
+  tomcat:
+    max-connections: 10000
+    accept-count: 1000
 
 management:
   endpoints:

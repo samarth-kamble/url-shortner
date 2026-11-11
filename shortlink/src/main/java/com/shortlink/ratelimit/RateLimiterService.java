@@ -1,5 +1,6 @@
 package com.shortlink.ratelimit;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -11,7 +12,8 @@ import java.util.List;
 
 /**
  * Distributed atomic Token Bucket rate limiter backed by Redis + Lua scripting.
- * Fails open if Redis is unavailable so cache outages never disrupt core redirects.
+ * Fails open if Redis is unavailable so cache outages never disrupt core
+ * redirects.
  */
 @Slf4j
 @Service
@@ -33,21 +35,29 @@ public class RateLimiterService {
     }
 
     private static final String KEY_PREFIX = "shortlink:rl:";
+    private static final String METRIC_NAME = "shortlink.ratelimit.requests";
 
     private final StringRedisTemplate redisTemplate;
     private final RateLimitProperties properties;
+    private final MeterRegistry meterRegistry;
     private final DefaultRedisScript<List> rateLimitScript;
 
-    public RateLimiterService(StringRedisTemplate redisTemplate, RateLimitProperties properties) {
+
+    public RateLimiterService(
+            StringRedisTemplate redisTemplate,
+            RateLimitProperties properties,
+            MeterRegistry meterRegistry) {
         this.redisTemplate = redisTemplate;
         this.properties = properties;
+        this.meterRegistry = meterRegistry;
         this.rateLimitScript = new DefaultRedisScript<>();
         this.rateLimitScript.setLocation(new ClassPathResource("scripts/rate_limiter.lua"));
         this.rateLimitScript.setResultType(List.class);
     }
 
     /**
-     * Atomically evaluates and consumes 1 token from the client's bucket for the given tier.
+     * Atomically evaluates and consumes 1 token from the client's bucket for the
+     * given tier.
      */
     public RateLimitResult checkLimit(String clientIp, Tier tier) {
         RateLimitProperties.TierConfig config = tier == Tier.WRITE
@@ -69,23 +79,30 @@ public class RateLimiterService {
                     String.valueOf(config.getCapacity()),
                     String.valueOf(config.getRefillTokensPerSecond()),
                     String.valueOf(nowMs),
-                    "1"
-            );
+                    "1");
 
             if (result == null || result.size() < 3) {
                 log.warn("Unexpected null/short response from Redis Lua rate limiter for key {}", key);
+                recordOutcome(tier, "fail_open");
                 return RateLimitResult.failOpen(config.getCapacity());
             }
 
             long allowedFlag = toLong(result.get(0));
             long remaining = toLong(result.get(1));
             long retryAfter = toLong(result.get(2));
+            boolean allowed = allowedFlag == 1L;
 
-            return new RateLimitResult(allowedFlag == 1L, config.getCapacity(), remaining, retryAfter);
+            recordOutcome(tier, allowed ? "allowed" : "rejected");
+            return new RateLimitResult(allowed, config.getCapacity(), remaining, retryAfter);
         } catch (Exception ex) {
             log.warn("Redis rate limiter unavailable for IP '{}', failing open: {}", clientIp, ex.getMessage());
+            recordOutcome(tier, "fail_open");
             return RateLimitResult.failOpen(config.getCapacity());
         }
+    }
+
+    private void recordOutcome(Tier tier, String outcome) {
+        meterRegistry.counter(METRIC_NAME, "tier", tier.getKeySegment(), "outcome", outcome).increment();
     }
 
     private long toLong(Object val) {
@@ -95,4 +112,3 @@ public class RateLimiterService {
         return Long.parseLong(String.valueOf(val));
     }
 }
-
