@@ -14,6 +14,7 @@ public record CachedLink(
         Instant expiresAt,
         boolean notFound
 ) {
+
     public static CachedLink of(String longUrl, boolean active, Instant expiresAt) {
         return new CachedLink(longUrl, active, expiresAt, false);
     }
@@ -27,3 +28,4 @@ public record CachedLink(
         return expiresAt != null && expiresAt.isBefore(Instant.now());
     }
 }
+

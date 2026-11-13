@@ -16,6 +16,23 @@ services:
       timeout: 5s
       retries: 5
 
+  postgres-shard1:
+    image: postgres:16-alpine
+    container_name: shortlink-postgres-shard1
+    environment:
+      POSTGRES_DB: shortlink
+      POSTGRES_USER: shortlink
+      POSTGRES_PASSWORD: shortlink
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_shard1_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shortlink -d shortlink"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   redis:
     image: redis:7-alpine
     container_name: shortlink-redis
@@ -48,13 +65,12 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
     healthcheck:
-      test: [ "CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1" ]
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 15s
     restart: unless-stopped
-
 
   app:
     build:
@@ -67,6 +83,9 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shortlink
       SPRING_DATASOURCE_USERNAME: shortlink
       SPRING_DATASOURCE_PASSWORD: shortlink
+      SHORTLINK_SHARD0_URL: jdbc:postgresql://postgres:5432/shortlink
+      SHORTLINK_SHARD1_URL: jdbc:postgresql://postgres-shard1:5432/shortlink
+      SHORTLINK_SHARDING_ENABLED: "true"
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -74,6 +93,8 @@ services:
       SHORTLINK_NODE_ID: 1
     depends_on:
       postgres:
+        condition: service_healthy
+      postgres-shard1:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -83,3 +104,4 @@ services:
 
 volumes:
   postgres_data:
+  postgres_shard1_data:

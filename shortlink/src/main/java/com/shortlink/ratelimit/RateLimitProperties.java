@@ -1,6 +1,5 @@
 package com.shortlink.ratelimit;
 
-
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -15,7 +14,6 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "shortlink.rate-limit")
 public class RateLimitProperties {
 
-    public boolean isEnabled;
     private boolean enabled = true;
     private TierConfig write = new TierConfig(20, 0.5);
     private TierConfig read = new TierConfig(1000, 500.0);
@@ -35,3 +33,4 @@ public class RateLimitProperties {
         }
     }
 }
+

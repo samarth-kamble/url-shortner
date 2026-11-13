@@ -4,10 +4,20 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.Instant;
 
+/**
+ * JPA Entity representing a shortened link.
+ * <p>
+ * Notice: Primary key 'id' does NOT use @GeneratedValue because it is populated with
+ * an application-generated 64-bit Snowflake ID before persisting, eliminating database sequence locks.
+ */
 @Entity
 @Table(name = "links")
 @Getter
@@ -49,3 +59,4 @@ public class Link {
         return expiresAt != null && Instant.now().isAfter(expiresAt);
     }
 }
+

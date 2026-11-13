@@ -1,6 +1,5 @@
 package com.shortlink.domain;
 
-
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,7 +10,7 @@ import java.util.Optional;
  * Uses derived query methods (zero raw SQL).
  */
 @Repository
-public interface LinkRepository extends JpaRepository<Link,Long> {
+public interface LinkRepository extends JpaRepository<Link, Long> {
 
     /**
      * Finds a link by its exact short code regardless of active status.
@@ -28,3 +27,4 @@ public interface LinkRepository extends JpaRepository<Link,Long> {
      */
     boolean existsByShortCode(String shortCode);
 }
+

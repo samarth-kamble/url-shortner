@@ -9,8 +9,6 @@ CREATE TABLE links (
     CONSTRAINT uk_links_short_code UNIQUE (short_code)
 );
 
--- Partial index: only indexes expiring links to save disk space and buffer Cache RAM
-CREATE INDEX idx_links_expires_at
-ON links (expires_at)
-WHERE expires_at
-IS NOT NULL;
+-- Partial index: only indexes expiring links to save disk space and buffer cache RAM
+CREATE INDEX idx_links_expires_at ON links (expires_at) WHERE expires_at IS NOT NULL;
+

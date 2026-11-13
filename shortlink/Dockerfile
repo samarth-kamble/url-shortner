@@ -3,7 +3,7 @@ FROM eclipse-temurin:25-jdk AS builder
 WORKDIR /build
 
 COPY .mvn .mvn
-COPY mvnw pom.xml
+COPY mvnw pom.xml ./
 RUN chmod +x ./mvnw && ./mvnw dependency:go-offline -B || true
 
 COPY src ./src
@@ -22,3 +22,4 @@ COPY --from=builder --chown=shortlink:shortlink /build/target/shortlink-*.jar ap
 EXPOSE 8080
 
 ENTRYPOINT ["java", "-XX:+UseZGC", "-XX:+ZGenerational", "-XX:MaxRAMPercentage=75.0", "-jar", "app.jar"]
+

@@ -30,6 +30,10 @@ class AnalyticsServiceTest {
     @Mock
     private ClickEventRepository clickEventRepository;
 
+    @org.mockito.Spy
+    private com.shortlink.sharding.ShardRouter shardRouter = new com.shortlink.sharding.ShardRouter(
+            new com.shortlink.sharding.ConsistentHashRing(List.of("shard-0", "shard-1"), 160));
+
     @InjectMocks
     private AnalyticsService analyticsService;
 

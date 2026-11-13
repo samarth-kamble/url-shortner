@@ -150,3 +150,4 @@ public class SnowflakeIdGenerator {
         return id & MAX_SEQUENCE;
     }
 }
+

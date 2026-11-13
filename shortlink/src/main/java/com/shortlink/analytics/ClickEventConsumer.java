@@ -11,7 +11,9 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * High-throughput batch consumer that polls ClickEvent records from Apache
@@ -27,19 +29,21 @@ public class ClickEventConsumer {
 
     private final ClickEventBatchRepository batchRepository;
     private final GeoIpService geoIpService;
+    private final com.shortlink.sharding.ShardRouter shardRouter;
     private final JsonMapper jsonMapper;
     private final Counter persistedCounter;
     private final Counter malformedCounter;
     private final Counter failedCounter;
     private final Timer batchTimer;
 
-
     public ClickEventConsumer(
             ClickEventBatchRepository batchRepository,
             GeoIpService geoIpService,
+            com.shortlink.sharding.ShardRouter shardRouter,
             MeterRegistry meterRegistry) {
         this.batchRepository = batchRepository;
         this.geoIpService = geoIpService;
+        this.shardRouter = shardRouter;
         this.jsonMapper = JsonMapper.builder().findAndAddModules().build();
 
         this.persistedCounter = Counter.builder("shortlink.analytics.consumed")
@@ -101,10 +105,24 @@ public class ClickEventConsumer {
             }
 
             if (!entities.isEmpty()) {
+                // Group entities by target shard for partitioned batch writes
+                Map<String, List<ClickEventEntity>> byShard = new LinkedHashMap<>();
+                for (ClickEventEntity entity : entities) {
+                    String shard = shardRouter.resolveShard(entity.getShortCode());
+                    byShard.computeIfAbsent(shard, k -> new ArrayList<>()).add(entity);
+                }
+
                 try {
-                    batchRepository.saveAllIdempotent(entities);
+                    for (Map.Entry<String, List<ClickEventEntity>> entry : byShard.entrySet()) {
+                        String shard = entry.getKey();
+                        List<ClickEventEntity> shardEntities = entry.getValue();
+                        shardRouter.executeExplicit(shard, () -> {
+                            batchRepository.saveAllIdempotent(shardEntities);
+                            return null;
+                        });
+                    }
                     persistedCounter.increment(entities.size());
-                    log.debug("Persisted batch of {} click events to database", entities.size());
+                    log.debug("Persisted batch of {} click events across {} shards", entities.size(), byShard.size());
                 } catch (Exception ex) {
                     failedCounter.increment(entities.size());
                     log.error("Failed to persist batch of {} click events", entities.size(), ex);

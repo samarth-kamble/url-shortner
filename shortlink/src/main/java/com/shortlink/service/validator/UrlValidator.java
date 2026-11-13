@@ -10,8 +10,7 @@ import java.net.UnknownHostException;
 import java.util.Set;
 
 /**
- * Validates URLs for format, scheme, length, and Server-Side Request Forgery
- * (SSRF) vulnerabilities.
+ * Validates URLs for format, scheme, length, and Server-Side Request Forgery (SSRF) vulnerabilities.
  */
 @Component
 public class UrlValidator {
@@ -21,18 +20,17 @@ public class UrlValidator {
     private static final String CLOUD_METADATA_IP = "169.254.169.254";
 
     /**
-     * Validates that the provided URL is well-formed, uses http/https, and does not
-     * point to internal/private IPs.
+     * Validates that the provided URL is well-formed, uses http/https, and does not point to internal/private IPs.
      *
      * @param url the raw URL string to validate
      * @throws InvalidUrlException if validation fails
      */
     public void validate(String url) {
-        if  (url == null || url.isBlank()) {
+        if (url == null || url.isBlank()) {
             throw new InvalidUrlException("URL cannot be empty");
         }
 
-        if  (url.length() > MAX_URL_LENGTH) {
+        if (url.length() > MAX_URL_LENGTH) {
             throw new InvalidUrlException("URL exceeds maximum length of " + MAX_URL_LENGTH + " characters");
         }
 

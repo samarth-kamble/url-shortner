@@ -7,14 +7,15 @@ import java.util.Arrays;
  * Converts 64-bit non-negative integers into compact, URL-safe alphanumeric strings (0-9, a-z, A-Z)
  * and vice-versa.
  */
-public class Base62Encoder {
+public final class Base62Encoder {
+
     private static final String ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
     private static final int BASE = ALPHABET.length(); // 62
     private static final int[] DECODE_TABLE = new int[128];
 
     static {
         Arrays.fill(DECODE_TABLE, -1);
-        for (int i = 0 ; i < ALPHABET.length() ; i++) {
+        for (int i = 0; i < ALPHABET.length(); i++) {
             DECODE_TABLE[ALPHABET.charAt(i)] = i;
         }
     }
@@ -38,7 +39,7 @@ public class Base62Encoder {
             return "0";
         }
 
-        StringBuilder sb = new StringBuilder(11); // Long.MAX_VALUE in base62 is 11 characters
+        StringBuilder sb = new StringBuilder(11); // Long.MAX_VALUE in Base62 is 11 characters
         long current = value;
         while (current > 0) {
             int remainder = (int) (current % BASE);
@@ -62,7 +63,7 @@ public class Base62Encoder {
         }
 
         long result = 0;
-        for(int i = 0 ; i < code.length() ; i++) {
+        for (int i = 0; i < code.length(); i++) {
             char c = code.charAt(i);
             if (c >= DECODE_TABLE.length || DECODE_TABLE[c] == -1) {
                 throw new IllegalArgumentException("Invalid Base62 character '" + c + "' in code: " + code);
@@ -70,11 +71,14 @@ public class Base62Encoder {
 
             int digit = DECODE_TABLE[c];
             // Check for arithmetic overflow before multiplying
-            if(result > (Long.MAX_VALUE - digit) / BASE) {
+            if (result > (Long.MAX_VALUE - digit) / BASE) {
                 throw new IllegalArgumentException("Base62 string overflows 64-bit integer: " + code);
             }
+
             result = result * BASE + digit;
         }
+
         return result;
     }
 }
+

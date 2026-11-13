@@ -10,5 +10,6 @@ public record LinkResponse(
         boolean isActive,
         Instant createdAt,
         Instant expiresAt
-        ) {
+) {
 }
+

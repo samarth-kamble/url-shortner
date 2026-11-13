@@ -14,8 +14,9 @@ public class PingController {
     @GetMapping("/ping")
     public Map<String, Object> ping() {
         return Map.of(
-                "Status","ok",
-                "time", Instant.now().toString()
+            "status", "ok",
+            "time", Instant.now().toString()
         );
     }
 }
+

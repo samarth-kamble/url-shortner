@@ -13,3 +13,4 @@ public record CreateLinkRequest(
         Instant expiresAt
 ) {
 }
+

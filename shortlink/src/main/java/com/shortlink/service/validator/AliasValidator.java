@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
  */
 @Component
 public class AliasValidator {
+
     private static final Pattern ALIAS_PATTERN = Pattern.compile("^[a-zA-Z0-9_-]{3,16}$");
 
     private static final Set<String> RESERVED_ALIASES = Set.of(
@@ -33,8 +34,9 @@ public class AliasValidator {
      * @throws InvalidAliasException if format is invalid or alias is reserved
      */
     public void validate(String alias) {
-        if(alias == null || alias.isBlank())
+        if (alias == null || alias.isBlank()) {
             return;
+        }
 
         String trimmed = alias.trim();
 
@@ -48,5 +50,5 @@ public class AliasValidator {
             );
         }
     }
-
 }
+

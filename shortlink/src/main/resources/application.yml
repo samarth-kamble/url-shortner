@@ -92,4 +92,17 @@ shortlink:
   analytics:
     kafka-enabled: ${SHORTLINK_ANALYTICS_KAFKA_ENABLED:true}
     clicks-topic: shortlink.clicks
+  sharding:
+    enabled: ${SHORTLINK_SHARDING_ENABLED:false}
+    virtual-nodes: ${SHORTLINK_SHARDING_VIRTUAL_NODES:160}
+    default-shard: shard-0
+    shards:
+      shard-0:
+        url: ${SHORTLINK_SHARD0_URL:${SPRING_DATASOURCE_URL:jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/shortlink}}
+        username: ${SHORTLINK_SHARD0_USERNAME:${SPRING_DATASOURCE_USERNAME:shortlink}}
+        password: ${SHORTLINK_SHARD0_PASSWORD:${SPRING_DATASOURCE_PASSWORD:shortlink}}
+      shard-1:
+        url: ${SHORTLINK_SHARD1_URL:jdbc:postgresql://${POSTGRES_SHARD1_HOST:localhost}:${POSTGRES_SHARD1_PORT:5433}/shortlink}
+        username: ${SHORTLINK_SHARD1_USERNAME:${SPRING_DATASOURCE_USERNAME:shortlink}}
+        password: ${SHORTLINK_SHARD1_PASSWORD:${SPRING_DATASOURCE_PASSWORD:shortlink}}
 

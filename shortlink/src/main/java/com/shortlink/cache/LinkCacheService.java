@@ -15,9 +15,12 @@ import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Multi-tier (L1 Caffeine + L2 Redis) cache-aside service for short link resolution.
- * Includes fail-open Redis degradation, striped locking to prevent cache stampedes,
- * TTL jitter to avoid cache avalanches, and negative caching to block cache penetration.
+ * Multi-tier (L1 Caffeine + L2 Redis) cache-aside service for short link
+ * resolution.
+ * Includes fail-open Redis degradation, striped locking to prevent cache
+ * stampedes,
+ * TTL jitter to avoid cache avalanches, and negative caching to block cache
+ * penetration.
  */
 @Slf4j
 @Service
@@ -30,6 +33,7 @@ public class LinkCacheService {
     private final Cache<String, CachedLink> l1Cache;
     private final StringRedisTemplate redisTemplate;
     private final LinkRepository linkRepository;
+    private final com.shortlink.sharding.ShardRouter shardRouter;
     private final JsonMapper jsonMapper;
     private final long l2TtlHours;
     private final long negativeTtlSeconds;
@@ -39,12 +43,14 @@ public class LinkCacheService {
             Cache<String, CachedLink> l1Cache,
             StringRedisTemplate redisTemplate,
             LinkRepository linkRepository,
+            com.shortlink.sharding.ShardRouter shardRouter,
             JsonMapper jsonMapper,
             @Value("${shortlink.cache.l2-ttl-hours:24}") long l2TtlHours,
             @Value("${shortlink.cache.negative-ttl-seconds:60}") long negativeTtlSeconds) {
         this.l1Cache = l1Cache;
         this.redisTemplate = redisTemplate;
         this.linkRepository = linkRepository;
+        this.shardRouter = shardRouter;
         this.jsonMapper = jsonMapper;
         this.l2TtlHours = l2TtlHours;
         this.negativeTtlSeconds = negativeTtlSeconds;
@@ -55,7 +61,8 @@ public class LinkCacheService {
     }
 
     /**
-     * Resolves a link using L1 (Caffeine) -> L2 (Redis) -> Database cache-aside flow.
+     * Resolves a link using L1 (Caffeine) -> L2 (Redis) -> Database cache-aside
+     * flow.
      */
     public CachedLink getLink(String shortCode) {
         // 1. Check L1 Local In-Memory Cache
@@ -85,8 +92,9 @@ public class LinkCacheService {
                 return l2Hit;
             }
 
-            // 4. Cold Read from PostgreSQL
-            Optional<Link> dbResult = linkRepository.findByShortCode(shortCode);
+            // 4. Cold Read from PostgreSQL on mapped shard
+            Optional<Link> dbResult = shardRouter.executeOnShard(shortCode,
+                    () -> linkRepository.findByShortCode(shortCode));
             CachedLink entry = dbResult
                     .map(link -> CachedLink.of(link.getLongUrl(), link.isActive(), link.getExpiresAt()))
                     .orElseGet(CachedLink::notFoundEntry);
@@ -106,7 +114,8 @@ public class LinkCacheService {
     }
 
     /**
-     * Immediately invalidates a link across both L1 and L2 caches (used on delete/update).
+     * Immediately invalidates a link across both L1 and L2 caches (used on
+     * delete/update).
      */
     public void evict(String shortCode) {
         l1Cache.invalidate(shortCode);
@@ -154,4 +163,3 @@ public class LinkCacheService {
         }
     }
 }
-

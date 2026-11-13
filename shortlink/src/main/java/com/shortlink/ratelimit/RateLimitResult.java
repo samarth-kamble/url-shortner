@@ -3,7 +3,7 @@ package com.shortlink.ratelimit;
 /**
  * Outcome of an atomic rate limit check.
  */
-public record RateLimitResult (
+public record RateLimitResult(
         boolean allowed,
         long limit,
         long remaining,
@@ -13,3 +13,4 @@ public record RateLimitResult (
         return new RateLimitResult(true, limit, limit, 0);
     }
 }
+
