@@ -28,5 +28,16 @@ public interface ClickEventRepository extends JpaRepository<ClickEventEntity, St
             "GROUP BY COALESCE(NULLIF(TRIM(c.referrer), ''), 'Direct') " +
             "ORDER BY COUNT(c) DESC")
     List<Object[]> countByReferrerGrouped(@Param("shortCode") String shortCode);
-}
 
+    @Query("SELECT COALESCE(NULLIF(TRIM(c.country), ''), 'Unknown'), COUNT(c) " +
+            "FROM ClickEventEntity c WHERE c.shortCode = :shortCode " +
+            "GROUP BY COALESCE(NULLIF(TRIM(c.country), ''), 'Unknown') " +
+            "ORDER BY COUNT(c) DESC")
+    List<Object[]> countByCountryGrouped(@Param("shortCode") String shortCode);
+
+    @Query("SELECT COALESCE(NULLIF(TRIM(c.city), ''), 'Unknown'), COUNT(c) " +
+            "FROM ClickEventEntity c WHERE c.shortCode = :shortCode " +
+            "GROUP BY COALESCE(NULLIF(TRIM(c.city), ''), 'Unknown') " +
+            "ORDER BY COUNT(c) DESC")
+    List<Object[]> countByCityGrouped(@Param("shortCode") String shortCode);
+}

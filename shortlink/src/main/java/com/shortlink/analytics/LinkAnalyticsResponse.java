@@ -14,7 +14,8 @@ public record LinkAnalyticsResponse(
         Instant lastClickedAt,
         Map<String, Long> deviceBreakdown,
         Map<String, Long> browserBreakdown,
-        Map<String, Long> topReferrers
+        Map<String, Long> topReferrers,
+        Map<String, Long> countryBreakdown,
+        Map<String, Long> cityBreakdown
 ) {
 }
-

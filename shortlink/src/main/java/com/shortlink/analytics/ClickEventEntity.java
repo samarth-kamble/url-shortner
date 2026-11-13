@@ -48,6 +48,15 @@ public class ClickEventEntity {
     @Column(name = "browser", length = 64, nullable = false, updatable = false)
     private String browser;
 
+    @Column(name = "country", length = 64, updatable = false)
+    private String country;
+
+    @Column(name = "country_code", length = 8, updatable = false)
+    private String countryCode;
+
+    @Column(name = "city", length = 64, updatable = false)
+    private String city;
+
     @Column(name = "clicked_at", nullable = false, updatable = false)
     private Instant clickedAt;
 }

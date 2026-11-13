@@ -19,8 +19,8 @@ public class ClickEventBatchRepository {
 
     private static final String INSERT_SQL = """
             INSERT INTO click_events (
-                event_id, short_code, long_url, client_ip, user_agent, referrer, device_type, browser, clicked_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                event_id, short_code, long_url, client_ip, user_agent, referrer, device_type, browser, country, country_code, city, clicked_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT (event_id) DO NOTHING
             """;
 
@@ -48,7 +48,10 @@ public class ClickEventBatchRepository {
                 ps.setString(6, entity.getReferrer());
                 ps.setString(7, entity.getDeviceType());
                 ps.setString(8, entity.getBrowser());
-                ps.setTimestamp(9, Timestamp.from(entity.getClickedAt()));
+                ps.setString(9, entity.getCountry());
+                ps.setString(10, entity.getCountryCode());
+                ps.setString(11, entity.getCity());
+                ps.setTimestamp(12, Timestamp.from(entity.getClickedAt()));
             }
 
             @Override
@@ -58,4 +61,3 @@ public class ClickEventBatchRepository {
         });
     }
 }
-

@@ -14,7 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * High-throughput batch consumer that polls ClickEvent records from Apache Kafka,
+ * High-throughput batch consumer that polls ClickEvent records from Apache
+ * Kafka,
  * parses and enriches visitor telemetry (device & browser), and persists them
  * idempotently to PostgreSQL.
  */
@@ -25,14 +26,20 @@ public class ClickEventConsumer {
     private static final Logger log = LoggerFactory.getLogger(ClickEventConsumer.class);
 
     private final ClickEventBatchRepository batchRepository;
+    private final GeoIpService geoIpService;
     private final JsonMapper jsonMapper;
     private final Counter persistedCounter;
     private final Counter malformedCounter;
     private final Counter failedCounter;
     private final Timer batchTimer;
 
-    public ClickEventConsumer(ClickEventBatchRepository batchRepository, MeterRegistry meterRegistry) {
+
+    public ClickEventConsumer(
+            ClickEventBatchRepository batchRepository,
+            GeoIpService geoIpService,
+            MeterRegistry meterRegistry) {
         this.batchRepository = batchRepository;
+        this.geoIpService = geoIpService;
         this.jsonMapper = JsonMapper.builder().findAndAddModules().build();
 
         this.persistedCounter = Counter.builder("shortlink.analytics.consumed")
@@ -55,11 +62,7 @@ public class ClickEventConsumer {
                 .register(meterRegistry);
     }
 
-    @KafkaListener(
-            topics = "${shortlink.analytics.clicks-topic:shortlink.clicks}",
-            groupId = "${spring.kafka.consumer.group-id:shortlink-analytics-consumer}",
-            containerFactory = "kafkaListenerContainerFactory"
-    )
+    @KafkaListener(topics = "${shortlink.analytics.clicks-topic:shortlink.clicks}", groupId = "${spring.kafka.consumer.group-id:shortlink-analytics-consumer}", containerFactory = "kafkaListenerContainerFactory")
     public void consumeBatch(List<String> messages) {
         if (messages == null || messages.isEmpty()) {
             return;
@@ -72,6 +75,7 @@ public class ClickEventConsumer {
                 try {
                     ClickEvent event = jsonMapper.readValue(message, ClickEvent.class);
                     UserAgentParser.DeviceAndBrowser deviceAndBrowser = UserAgentParser.parse(event.userAgent());
+                    GeoLocation location = geoIpService.resolve(event.clientIp());
 
                     ClickEventEntity entity = ClickEventEntity.builder()
                             .eventId(event.eventId())
@@ -82,13 +86,17 @@ public class ClickEventConsumer {
                             .referrer(event.referrer())
                             .deviceType(deviceAndBrowser.deviceType())
                             .browser(deviceAndBrowser.browser())
+                            .country(location.country())
+                            .countryCode(location.countryCode())
+                            .city(location.city())
                             .clickedAt(event.clickedAt())
                             .build();
 
                     entities.add(entity);
                 } catch (Exception ex) {
                     malformedCounter.increment();
-                    log.warn("Skipping malformed click event JSON: payload='{}', reason='{}'", message, ex.getMessage());
+                    log.warn("Skipping malformed click event JSON: payload='{}', reason='{}'", message,
+                            ex.getMessage());
                 }
             }
 
@@ -106,4 +114,3 @@ public class ClickEventConsumer {
         });
     }
 }
-

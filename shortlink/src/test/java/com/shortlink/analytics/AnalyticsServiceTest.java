@@ -68,6 +68,12 @@ class AnalyticsServiceTest {
         List<Object[]> referrerRows = List.of(new Object[]{"https://google.com", 25L}, new Object[]{"Direct", 17L});
         when(clickEventRepository.countByReferrerGrouped(shortCode)).thenReturn(referrerRows);
 
+        List<Object[]> countryRows = List.of(new Object[]{"United States", 28L}, new Object[]{"India", 14L});
+        when(clickEventRepository.countByCountryGrouped(shortCode)).thenReturn(countryRows);
+
+        List<Object[]> cityRows = List.of(new Object[]{"San Francisco", 20L}, new Object[]{"Mumbai", 14L});
+        when(clickEventRepository.countByCityGrouped(shortCode)).thenReturn(cityRows);
+
         LinkAnalyticsResponse response = analyticsService.getAnalytics(shortCode);
 
         assertThat(response.shortCode()).isEqualTo(shortCode);
@@ -78,6 +84,8 @@ class AnalyticsServiceTest {
         assertThat(response.deviceBreakdown()).containsEntry("DESKTOP", 30L).containsEntry("MOBILE", 12L);
         assertThat(response.browserBreakdown()).containsEntry("Chrome", 35L).containsEntry("Safari", 7L);
         assertThat(response.topReferrers()).containsEntry("https://google.com", 25L).containsEntry("Direct", 17L);
+        assertThat(response.countryBreakdown()).containsEntry("United States", 28L).containsEntry("India", 14L);
+        assertThat(response.cityBreakdown()).containsEntry("San Francisco", 20L).containsEntry("Mumbai", 14L);
     }
 }
 

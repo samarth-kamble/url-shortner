@@ -36,54 +36,54 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 class ClickAnalyticsIntegrationTest {
 
-    @Container
-    @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+        @Container
+        @ServiceConnection
+        static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
 
-    @Container
-    @ServiceConnection(name = "redis")
-    static GenericContainer<?> redis = new GenericContainer<>("redis:7-alpine")
-            .withExposedPorts(6379);
+        @Container
+        @ServiceConnection(name = "redis")
+        static GenericContainer<?> redis = new GenericContainer<>("redis:7-alpine")
+                        .withExposedPorts(6379);
 
-    @Container
-    @ServiceConnection
-    static KafkaContainer kafka = new KafkaContainer("apache/kafka-native:3.8.0");
+        @Container
+        @ServiceConnection
+        static KafkaContainer kafka = new KafkaContainer("apache/kafka-native:3.8.0");
 
-    @Autowired
-    private WebApplicationContext webApplicationContext;
+        @Autowired
+        private WebApplicationContext webApplicationContext;
 
-    @Autowired
-    private LinkRepository linkRepository;
+        @Autowired
+        private LinkRepository linkRepository;
 
-    @Autowired
-    private ClickEventRepository clickEventRepository;
+        @Autowired
+        private ClickEventRepository clickEventRepository;
 
-    @Autowired
-    private ClickEventBatchRepository clickEventBatchRepository;
+        @Autowired
+        private ClickEventBatchRepository clickEventBatchRepository;
 
-    @Autowired
-    private LinkCacheService linkCacheService;
+        @Autowired
+        private LinkCacheService linkCacheService;
 
-    @Autowired
-    private StringRedisTemplate stringRedisTemplate;
+        @Autowired
+        private StringRedisTemplate stringRedisTemplate;
 
-    @Autowired
-    private JsonMapper jsonMapper;
+        @Autowired
+        private JsonMapper jsonMapper;
 
-    private MockMvc mockMvc;
+        private MockMvc mockMvc;
 
-    @BeforeEach
-    void setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
-        clickEventRepository.deleteAll();
-        linkRepository.deleteAll();
-        linkCacheService.clearL1();
-        if (stringRedisTemplate.getConnectionFactory() != null) {
-            try (var conn = stringRedisTemplate.getConnectionFactory().getConnection()) {
-                conn.serverCommands().flushDb();
-            }
+        @BeforeEach
+        void setUp() {
+                mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+                clickEventRepository.deleteAll();
+                linkRepository.deleteAll();
+                linkCacheService.clearL1();
+                if (stringRedisTemplate.getConnectionFactory() != null) {
+                        try (var conn = stringRedisTemplate.getConnectionFactory().getConnection()) {
+                                conn.serverCommands().flushDb();
+                        }
+                }
         }
-    }
 
     @Test
     @DisplayName("End-to-end: Redirect emits Kafka event -> Consumer saves to DB -> Analytics API aggregates")
@@ -138,43 +138,50 @@ class ClickAnalyticsIntegrationTest {
                 .andExpect(jsonPath("$.browserBreakdown.Chrome", is(1)))
                 .andExpect(jsonPath("$.browserBreakdown.Safari", is(1)))
                 .andExpect(jsonPath("$.topReferrers['https://google.com']", is(1)))
-                .andExpect(jsonPath("$.topReferrers['https://t.co/shortlink']", is(1)));
+                .andExpect(jsonPath("$.topReferrers['https://t.co/shortlink']", is(1)))
+                .andExpect(jsonPath("$.countryBreakdown.Unknown", is(2)))
+                .andExpect(jsonPath("$.cityBreakdown.Unknown", is(2)));
     }
 
-    @Test
-    @DisplayName("Batch repository idempotency: duplicate eventId ignored with ON CONFLICT DO NOTHING")
-    void testBatchRepositoryIdempotency() {
-        String eventId = "test-uuid-" + System.nanoTime();
-        ClickEventEntity event1 = ClickEventEntity.builder()
-                .eventId(eventId)
-                .shortCode("idemp001")
-                .longUrl("https://example.com/idempotent")
-                .clientIp("127.0.0.1")
-                .userAgent("curl/8.7.1")
-                .referrer(null)
-                .deviceType("BOT")
-                .browser("curl")
-                .clickedAt(Instant.now())
-                .build();
+        @Test
+        @DisplayName("Batch repository idempotency: duplicate eventId ignored with ON CONFLICT DO NOTHING")
+        void testBatchRepositoryIdempotency() {
+                String eventId = "test-uuid-" + System.nanoTime();
+                ClickEventEntity event1 = ClickEventEntity.builder()
+                                .eventId(eventId)
+                                .shortCode("idemp001")
+                                .longUrl("https://example.com/idempotent")
+                                .clientIp("127.0.0.1")
+                                .userAgent("curl/8.7.1")
+                                .referrer(null)
+                                .deviceType("BOT")
+                                .browser("curl")
+                                .country("Local Network")
+                                .countryCode("LOCAL")
+                                .city("Local")
+                                .clickedAt(Instant.now())
+                                .build();
 
-        ClickEventEntity eventDuplicate = ClickEventEntity.builder()
-                .eventId(eventId)
-                .shortCode("idemp001")
-                .longUrl("https://example.com/idempotent")
-                .clientIp("127.0.0.1")
-                .userAgent("curl/8.7.1")
-                .referrer(null)
-                .deviceType("BOT")
-                .browser("curl")
-                .clickedAt(Instant.now())
-                .build();
+                ClickEventEntity eventDuplicate = ClickEventEntity.builder()
+                                .eventId(eventId)
+                                .shortCode("idemp001")
+                                .longUrl("https://example.com/idempotent")
+                                .clientIp("127.0.0.1")
+                                .userAgent("curl/8.7.1")
+                                .referrer(null)
+                                .deviceType("BOT")
+                                .browser("curl")
+                                .country("Local Network")
+                                .countryCode("LOCAL")
+                                .city("Local")
+                                .clickedAt(Instant.now())
+                                .build();
 
-        clickEventBatchRepository.saveAllIdempotent(List.of(event1));
-        assertThat(clickEventRepository.countByShortCode("idemp001")).isEqualTo(1L);
+                clickEventBatchRepository.saveAllIdempotent(List.of(event1));
+                assertThat(clickEventRepository.countByShortCode("idemp001")).isEqualTo(1L);
 
-        // Save duplicate - should NOT throw and should NOT increase count
-        clickEventBatchRepository.saveAllIdempotent(List.of(eventDuplicate));
-        assertThat(clickEventRepository.countByShortCode("idemp001")).isEqualTo(1L);
-    }
+                // Save duplicate - should NOT throw and should NOT increase count
+                clickEventBatchRepository.saveAllIdempotent(List.of(eventDuplicate));
+                assertThat(clickEventRepository.countByShortCode("idemp001")).isEqualTo(1L);
+        }
 }
-

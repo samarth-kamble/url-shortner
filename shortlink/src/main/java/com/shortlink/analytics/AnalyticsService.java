@@ -34,6 +34,8 @@ public class AnalyticsService {
         Map<String, Long> deviceBreakdown = toMap(clickEventRepository.countByDeviceTypeGrouped(shortCode));
         Map<String, Long> browserBreakdown = toMap(clickEventRepository.countByBrowserGrouped(shortCode));
         Map<String, Long> topReferrers = toMap(clickEventRepository.countByReferrerGrouped(shortCode));
+        Map<String, Long> countryBreakdown = toMap(clickEventRepository.countByCountryGrouped(shortCode));
+        Map<String, Long> cityBreakdown = toMap(clickEventRepository.countByCityGrouped(shortCode));
 
         return new LinkAnalyticsResponse(
                 link.getShortCode(),
@@ -43,7 +45,9 @@ public class AnalyticsService {
                 lastClickedAt,
                 deviceBreakdown,
                 browserBreakdown,
-                topReferrers);
+                topReferrers,
+                countryBreakdown,
+                cityBreakdown);
     }
 
     private Map<String, Long> toMap(List<Object[]> rows) {
