@@ -10,12 +10,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -74,10 +77,15 @@ class AnalyticsServiceTest {
         List<Object[]> cityRows = List.of(new Object[]{"San Francisco", 20L}, new Object[]{"Mumbai", 14L});
         when(clickEventRepository.countByCityGrouped(shortCode)).thenReturn(cityRows);
 
+        List<Object[]> dailyRows = new java.util.ArrayList<>();
+        dailyRows.add(new Object[]{Timestamp.from(Instant.parse("2026-11-13T00:00:00Z")), 42L});
+        when(clickEventRepository.findDailyTimeSeriesAllTime(shortCode)).thenReturn(dailyRows);
+
         LinkAnalyticsResponse response = analyticsService.getAnalytics(shortCode);
 
         assertThat(response.shortCode()).isEqualTo(shortCode);
         assertThat(response.longUrl()).isEqualTo("https://spring.io");
+        assertThat(response.window()).isEqualTo("all");
         assertThat(response.totalClicks()).isEqualTo(42L);
         assertThat(response.uniqueVisitors()).isEqualTo(30L);
         assertThat(response.lastClickedAt()).isEqualTo(latestClick);
@@ -86,6 +94,45 @@ class AnalyticsServiceTest {
         assertThat(response.topReferrers()).containsEntry("https://google.com", 25L).containsEntry("Direct", 17L);
         assertThat(response.countryBreakdown()).containsEntry("United States", 28L).containsEntry("India", 14L);
         assertThat(response.cityBreakdown()).containsEntry("San Francisco", 20L).containsEntry("Mumbai", 14L);
+        assertThat(response.timeSeries()).hasSize(1);
+        assertThat(response.timeSeries().getFirst().clicks()).isEqualTo(42L);
+    }
+
+    @Test
+    @DisplayName("Aggregates 24-hour window analytics with zero-filled hourly time-series")
+    void aggregates24HourWindowWithZeroFilling() {
+        String shortCode = "hour123";
+        Link link = Link.builder()
+                .id(999L)
+                .shortCode(shortCode)
+                .longUrl("https://spring.io/projects")
+                .createdAt(Instant.now())
+                .isActive(true)
+                .build();
+
+        when(linkRepository.findByShortCode(shortCode)).thenReturn(Optional.of(link));
+        when(clickEventRepository.countByShortCodeSince(eq(shortCode), any(Instant.class))).thenReturn(5L);
+        when(clickEventRepository.countDistinctClientIpByShortCodeSince(eq(shortCode), any(Instant.class))).thenReturn(3L);
+
+        Instant hour1 = Instant.now().minus(2, java.time.temporal.ChronoUnit.HOURS).truncatedTo(java.time.temporal.ChronoUnit.HOURS);
+        List<Object[]> hourlyRows = new java.util.ArrayList<>();
+        hourlyRows.add(new Object[]{Timestamp.from(hour1), 5L});
+        when(clickEventRepository.findHourlyTimeSeriesSince(eq(shortCode), any(Instant.class))).thenReturn(hourlyRows);
+
+        LinkAnalyticsResponse response = analyticsService.getAnalytics(shortCode, "24h");
+
+        assertThat(response.window()).isEqualTo("24h");
+        assertThat(response.totalClicks()).isEqualTo(5L);
+        assertThat(response.uniqueVisitors()).isEqualTo(3L);
+        // 24 hours plus current hour = 25 hourly buckets
+        assertThat(response.timeSeries()).hasSizeGreaterThanOrEqualTo(24);
+        // Ensure bucket with clicks has 5, and others are zero-filled
+        long clicksInBucket = response.timeSeries().stream()
+                .filter(pt -> pt.timestamp().equals(hour1))
+                .mapToLong(TimeSeriesPoint::clicks)
+                .findFirst()
+                .orElse(0L);
+        assertThat(clicksInBucket).isEqualTo(5L);
     }
 }
 

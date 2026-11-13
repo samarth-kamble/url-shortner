@@ -126,11 +126,12 @@ class ClickAnalyticsIntegrationTest {
                     assertThat(count).isEqualTo(2L);
                 });
 
-        // 4. Query Analytics API
+        // 4. Query Analytics API (lifetime default)
         mockMvc.perform(get("/api/v1/links/" + shortCode + "/analytics"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.shortCode", is(shortCode)))
                 .andExpect(jsonPath("$.longUrl", is("https://kafka.apache.org/documentation/")))
+                .andExpect(jsonPath("$.window", is("all")))
                 .andExpect(jsonPath("$.totalClicks", is(2)))
                 .andExpect(jsonPath("$.uniqueVisitors", is(2)))
                 .andExpect(jsonPath("$.deviceBreakdown.DESKTOP", is(1)))
@@ -140,7 +141,20 @@ class ClickAnalyticsIntegrationTest {
                 .andExpect(jsonPath("$.topReferrers['https://google.com']", is(1)))
                 .andExpect(jsonPath("$.topReferrers['https://t.co/shortlink']", is(1)))
                 .andExpect(jsonPath("$.countryBreakdown.Unknown", is(2)))
-                .andExpect(jsonPath("$.cityBreakdown.Unknown", is(2)));
+                .andExpect(jsonPath("$.cityBreakdown.Unknown", is(2)))
+                .andExpect(jsonPath("$.timeSeries").isArray());
+
+        // 5. Query Analytics API with 24h window
+        mockMvc.perform(get("/api/v1/links/" + shortCode + "/analytics").param("window", "24h"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.window", is("24h")))
+                .andExpect(jsonPath("$.totalClicks", is(2)))
+                .andExpect(jsonPath("$.timeSeries").isArray());
+
+        // 6. Query Dedicated Time-Series Endpoint
+        mockMvc.perform(get("/api/v1/links/" + shortCode + "/analytics/timeseries").param("window", "24h"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
     }
 
         @Test

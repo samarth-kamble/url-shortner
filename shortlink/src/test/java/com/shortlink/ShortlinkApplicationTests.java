@@ -11,11 +11,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 class ShortlinkApplicationTests {
 
-	@Container
-	@ServiceConnection
-	static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+    @Container
+    @ServiceConnection
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
 
-	@Test
-	void contextLoads() {
-	}
+    @Test
+    void contextLoads() {
+    }
 }

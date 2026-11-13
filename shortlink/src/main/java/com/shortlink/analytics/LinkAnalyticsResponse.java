@@ -1,6 +1,7 @@
 package com.shortlink.analytics;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -9,6 +10,7 @@ import java.util.Map;
 public record LinkAnalyticsResponse(
         String shortCode,
         String longUrl,
+        String window,
         long totalClicks,
         long uniqueVisitors,
         Instant lastClickedAt,
@@ -16,6 +18,7 @@ public record LinkAnalyticsResponse(
         Map<String, Long> browserBreakdown,
         Map<String, Long> topReferrers,
         Map<String, Long> countryBreakdown,
-        Map<String, Long> cityBreakdown
+        Map<String, Long> cityBreakdown,
+        List<TimeSeriesPoint> timeSeries
 ) {
 }
