@@ -35,6 +35,18 @@ spring:
           max-active: 16
           max-idle: 8
           min-idle: 2
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9094}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: "1"
+      retries: 2
+      batch-size: 32768
+      compression-type: lz4
+      properties:
+        linger.ms: 10
+        max.block.ms: 500
 
 server:
   tomcat:
@@ -67,3 +79,7 @@ shortlink:
     read:
       capacity: 1000
       refill-tokens-per-second: 500.0
+  analytics:
+    kafka-enabled: ${SHORTLINK_ANALYTICS_KAFKA_ENABLED:true}
+    clicks-topic: shortlink.clicks
+
