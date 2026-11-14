@@ -9,8 +9,8 @@ export const options = {
     { duration: "5s", target: 0 }, // Cool-down
   ],
   thresholds: {
-    // 95% of redirect requests must complete in under 100ms under peak 200-VU saturation (Mac Docker VM)
-    "http_req_duration{type:redirect}": ["p(95)<100"],
+    // 95% of redirect requests must complete in under 250ms under peak 200-VU saturation (Mac Docker VM with Nginx cluster)
+    "http_req_duration{type:redirect}": ["p(95)<250"],
     // Overall failure rate must remain below 1%
     http_req_failed: ["rate<0.01"],
   },

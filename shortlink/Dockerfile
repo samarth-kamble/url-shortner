@@ -14,7 +14,9 @@ FROM eclipse-temurin:25-jre
 WORKDIR /app
 
 # Create unprivileged system user for container security
-RUN groupadd -r shortlink && useradd -r -g shortlink shortlink
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r shortlink && useradd -r -g shortlink shortlink
 USER shortlink:shortlink
 
 COPY --from=builder --chown=shortlink:shortlink /build/target/shortlink-*.jar app.jar
