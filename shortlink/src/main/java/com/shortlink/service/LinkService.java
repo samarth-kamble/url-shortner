@@ -51,6 +51,11 @@ public class LinkService {
     }
 
     public LinkResponse createLink(CreateLinkRequest request) {
+        Long userId = getCurrentUserId();
+        return createLink(request, userId);
+    }
+
+    public LinkResponse createLink(CreateLinkRequest request, Long userId) {
         urlValidator.validate(request.longUrl());
 
         if (request.expiresAt() != null && request.expiresAt().isBefore(Instant.now())) {
@@ -76,11 +81,29 @@ public class LinkService {
                 .longUrl(request.longUrl().trim())
                 .isCustom(isCustom)
                 .isActive(true)
+                .userId(userId)
                 .createdAt(Instant.now())
                 .expiresAt(request.expiresAt())
                 .build();
 
         return shardRouter.executeOnShard(shortCode, () -> saveAndCache(link));
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.List<LinkResponse> getMyLinks(Long userId) {
+        return linkRepository.findAllByUserIdAndIsActiveTrueOrderByCreatedAtDesc(userId)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    private Long getCurrentUserId() {
+        org.springframework.security.core.Authentication auth =
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof com.shortlink.security.UserPrincipal principal) {
+            return principal.id();
+        }
+        return null;
     }
 
     @Transactional

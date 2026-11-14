@@ -49,6 +49,9 @@ public class Link {
     @Builder.Default
     private Instant createdAt = Instant.now();
 
+    @Column(name = "user_id")
+    private Long userId;
+
     @Column(name = "expires_at")
     private Instant expiresAt;
 

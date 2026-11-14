@@ -30,6 +30,13 @@ public class LinkController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<java.util.List<LinkResponse>> getMyLinks(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal com.shortlink.security.UserPrincipal principal) {
+        java.util.List<LinkResponse> response = linkService.getMyLinks(principal.id());
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{shortCode}")
     public ResponseEntity<LinkResponse> getLinkDetails(@PathVariable String shortCode) {
         LinkResponse response = linkService.getLinkDetails(shortCode);

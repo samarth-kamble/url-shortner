@@ -2,21 +2,15 @@
 
 ShortLink is an enterprise-grade, distributed URL shortening and real-time click-analytics platform built with Java 25, Spring Boot 4, PostgreSQL, Redis, Apache Kafka, Prometheus, Grafana, and Docker Compose.
 
-
 ---
 
-
 ## 🚀 Project Status
-
 
 - **Current Status**: **100% Complete — All 4 Phases & 15 Days Finished**
 - **Test Suite**: **80 / 80 Tests Passing (100% Pass Rate)**
 - **Architecture**: Multi-tier distributed system with L1/L2 caching, distributed rate limiting, Kafka click event streaming, MaxMind GeoIP enrichment, time-series analytics, consistent-hash database sharding, and full Prometheus & Grafana observability.
 
-
-
 ## 🏛 Architecture Overview
-
 
 ```text
                                             User Requests / k6 Load
@@ -64,7 +58,6 @@ ShortLink is an enterprise-grade, distributed URL shortening and real-time click
 
 ### Modular System Architecture Across All 4 Phases
 
-
 1. **Phase 1: Modular Monolith Foundation (Days 1–5)**
    - **Twitter Snowflake 64-bit ID Generator**: Generates 4,096 unique IDs per millisecond per worker node with clock-drift protection.
    - **Base62 URL Encoding**: Produces short, collision-free 7-character aliases.
@@ -72,13 +65,11 @@ ShortLink is an enterprise-grade, distributed URL shortening and real-time click
    - **Data Layer**: Flyway automated migrations, PostgreSQL partial indexes, soft deletes, and JPA repositories.
    - **Production Packaging**: Multi-stage Eclipse Temurin 25 Alpine Dockerfile running as non-root user.
 
-
 - **Two-Tier Cache-Aside Architecture**:
   - **L1 In-Memory Near Cache**: Caffeine cache serving hot redirects in under 1 millisecond.
   - **L2 Distributed Cache**: Redis cluster caching with negative caching (anti-penetration) and stampede mitigation.
 - **Distributed Atomic Rate Limiter**: High-throughput Redis + Lua Token Bucket implementing sliding refills, `X-RateLimit-*` headers, and RFC 7807 `429 Too Many Requests`.
 - **Concurrency**: Native Java 25 Virtual Threads with Micrometer Actuator instrumentation.
-
 
 3. **Phase 3: Event-Driven Click Streaming & Real-Time Analytics (Days 9–12)**
    - **Asynchronous Click Ingestion**: Fire-and-forget Kafka producer decoupling click tracking from redirects (0ms overhead added to user latency).
@@ -86,30 +77,26 @@ ShortLink is an enterprise-grade, distributed URL shortening and real-time click
    - **MaxMind GeoLite2 Geolocation**: Automatic IP-to-Country and IP-to-City enrichment with fallback for private/local subnets.
    - **Time-Series Query Engine**: Rolling analytics windows (`1h`, `24h`, `7d`, `30d`, `all`) with country, city, and daily trend breakdowns.
 
-
 4. **Phase 4: Horizontal Scaling, Observability & Grand Finale (Days 13–15)**
    - **Consistent-Hash Database Sharding**: MurmurHash3 consistent hashing ring across 100 virtual nodes per physical shard, isolating write spikes and scaling storage linearly across independent PostgreSQL instances.
    - **Enterprise Telemetry**: Micrometer Prometheus registry exporting P50/P95/P99 latency histograms, cache hit ratios, and rate-limit counters at `/actuator/prometheus`.
    - **Automated Grafana Provisioning**: Self-healing Grafana deployment with auto-configured Prometheus datasources and a comprehensive 14-panel system dashboard.
    - **Capstone Stress Testing**: High-concurrency k6 benchmark validating 200 Virtual Users across combined write, redirect, and analytics workloads.
 
-
-
 ## 📊 Performance Benchmarks Across Phases
-
 
 All benchmarks executed via automated `k6` load tests running inside Docker Compose:
 
-  | Metric | Phase 1 Baseline (Direct DB, 50 VUs) | Phase 2 Stress (L1/L2 Cache, 200 VUs) | Phase 4 Capstone (Sharding + Kafka + Metrics, 200 VUs) |
-  | :--- | :--- | :--- | :--- |
-  | **Sustained Throughput** | 2,353 req/s | 10,920 req/s | **1,000 – 1,844 req/s** _(Mixed writes + redirects + analytics)_ |
-  | **Total Requests Handled** | 58,998 (25s) | 396,815 (35s) | **37,164 requests / 68,702 checks (35s)** |
-  | **Redirect Latency (Min)** | 253 µs | 204 µs | **712 µs** |
-  | **Redirect Latency (P90)** | 2.10 ms | 18.40 ms | **49.93 ms** |
-  | **Redirect Latency (P95)** | 2.95 ms | 27.29 ms | **64.89 ms** |
-  | **HTTP Failure Rate** | 0.00% | 0.00% | **0.00% (0 errors across all scenarios)** |
-  | **Check Success Rate** | 100.00% | 100.00% | **100.00% (68,702 / 68,702 checks succeeded)** |
-  | **Automated Tests** | 40 / 40 passed | 44 / 44 passed | **80 / 80 passed (100% suite health)** |
+| Metric                     | Phase 1 Baseline (Direct DB, 50 VUs) | Phase 2 Stress (L1/L2 Cache, 200 VUs) | Phase 4 Capstone (Sharding + Kafka + Metrics, 200 VUs)           |
+| :------------------------- | :----------------------------------- | :------------------------------------ | :--------------------------------------------------------------- |
+| **Sustained Throughput**   | 2,353 req/s                          | 10,920 req/s                          | **1,000 – 1,844 req/s** _(Mixed writes + redirects + analytics)_ |
+| **Total Requests Handled** | 58,998 (25s)                         | 396,815 (35s)                         | **37,164 requests / 68,702 checks (35s)**                        |
+| **Redirect Latency (Min)** | 253 µs                               | 204 µs                                | **712 µs**                                                       |
+| **Redirect Latency (P90)** | 2.10 ms                              | 18.40 ms                              | **49.93 ms**                                                     |
+| **Redirect Latency (P95)** | 2.95 ms                              | 27.29 ms                              | **64.89 ms**                                                     |
+| **HTTP Failure Rate**      | 0.00%                                | 0.00%                                 | **0.00% (0 errors across all scenarios)**                        |
+| **Check Success Rate**     | 100.00%                              | 100.00%                               | **100.00% (68,702 / 68,702 checks succeeded)**                   |
+| **Automated Tests**        | 40 / 40 passed                       | 44 / 44 passed                        | **80 / 80 passed (100% suite health)**                           |
 
 ---
 
@@ -134,6 +121,8 @@ Full word-for-word scripts, screen recordings, architectural slides, and termina
 | **Episode 13** | Database Sharding & MurmurHash3 Consistent Hashing           | [Episode_13_Database_Sharding_and_Consistent_Hashing.md](docs/video/Episode_13_Database_Sharding_and_Consistent_Hashing.md)     |
 | **Episode 14** | Prometheus Telemetry & Automated Grafana Provisioning        | [Episode_14_Prometheus_and_Grafana_Observability_Stack.md](docs/video/Episode_14_Prometheus_and_Grafana_Observability_Stack.md) |
 | **Episode 15** | Capstone Load Benchmarks & Complete System Polish (Finale)   | [Episode_15_Phase4_Capstone_and_Extreme_Benchmarks.md](docs/video/Episode_15_Phase4_Capstone_and_Extreme_Benchmarks.md)         |
+| **Episode 16** | Nginx L7 Load Balancer & Zero-Downtime Automatic Failover    | [Episode_16_Nginx_Load_Balancer_and_Zero_Downtime_Failover.md](docs/video/Episode_16_Nginx_Load_Balancer_and_Zero_Downtime_Failover.md) |
+| **Episode 17** | Distributed User Authentication, Stateless JWT & Multi-Tenancy | [Episode_17_Distributed_Authentication_JWT_and_MultiTenancy.md](docs/video/Episode_17_Distributed_Authentication_JWT_and_MultiTenancy.md) |
 
 ---
 
@@ -149,12 +138,14 @@ docker compose up -d --build
 
 This starts:
 
-- **`shortlink-app`** (`:8080`): Spring Boot 4 / Java 25 Application
+- **`shortlink-nginx`** (`:8080`, `:80`): High-Performance Nginx L7 Load Balancer with `least_conn` & automatic failover
+- **`shortlink-app-1`** (`8080` internal): Spring Boot 4 Application Node 1 (`SHORTLINK_NODE_ID: 1`)
+- **`shortlink-app-2`** (`8080` internal): Spring Boot 4 Application Node 2 (`SHORTLINK_NODE_ID: 2`)
 - **`shortlink-postgres`** (`:5432`): Primary Database / Shard 0
 - **`shortlink-postgres-shard1`** (`:5434`): Database Shard 1
 - **`shortlink-redis`** (`:6379`): Redis 7 Cache & Rate Limiter
 - **`shortlink-kafka`** (`:9094`): Apache Kafka KRaft Event Broker
-- **`shortlink-prometheus`** (`:9090`): Prometheus Telemetry Scraper
+- **`shortlink-prometheus`** (`:9090`): Prometheus Telemetry Scraper (scraping both app nodes)
 - **`shortlink-grafana`** (`:3000`): Grafana Observability Dashboard (`admin` / `admin`)
 
 Verify all services:
@@ -163,6 +154,26 @@ Verify all services:
 docker compose ps
 ```
 
+### 2. Verify Load Balancing & High Availability Failover
+
+Inspect live traffic distribution across both application nodes:
+
+```bash
+for i in {1..6}; do curl -i -s http://localhost:8080/api/v1/ping | grep "X-Upstream-Server"; done
+```
+
+Simulate an instant node failure and verify zero-downtime failover:
+
+```bash
+# Stop Node 1
+docker stop shortlink-app-1
+
+# Request still succeeds seamlessly with 200 OK via Node 2!
+curl -i http://localhost:8080/api/v1/ping
+
+# Bring Node 1 back online
+docker start shortlink-app-1
+```
 
 ## 📡 API cURL Cheatsheet
 
@@ -221,11 +232,9 @@ _Response (`200 OK`):_
 curl -s http://localhost:8080/actuator/prometheus | grep "http_server_requests_seconds"
 ```
 
-
 ### 5. Access Grafana Dashboard
 
 Navigate to `http://localhost:3000` in your browser (Credentials: `admin` / `admin`) to view the pre-provisioned **ShortLink System Overview** dashboard!
-
 
 ## 🧪 Running Automated Tests
 

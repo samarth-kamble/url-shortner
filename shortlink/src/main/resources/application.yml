@@ -90,6 +90,10 @@ shortlink:
   base-url: http://localhost:8080
   node-id: ${SHORTLINK_NODE_ID:1}
   custom-epoch: 1767225600000 # 2026-01-01T00:00:00Z UTC
+  jwt:
+    secret: ${SHORTLINK_JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+    access-token-expiration-ms: ${SHORTLINK_JWT_ACCESS_EXPIRATION:900000} # 15 minutes
+    refresh-token-expiration-ms: ${SHORTLINK_JWT_REFRESH_EXPIRATION:604800000} # 7 days
   cache:
     l1-max-size: 10000
     l1-ttl-minutes: 10

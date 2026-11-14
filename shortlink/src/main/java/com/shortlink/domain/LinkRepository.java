@@ -26,5 +26,10 @@ public interface LinkRepository extends JpaRepository<Link, Long> {
      * Checks if a short code is already taken.
      */
     boolean existsByShortCode(String shortCode);
+
+    /**
+     * Finds all active links created by a specific user, newest first.
+     */
+    java.util.List<Link> findAllByUserIdAndIsActiveTrueOrderByCreatedAtDesc(Long userId);
 }
 
