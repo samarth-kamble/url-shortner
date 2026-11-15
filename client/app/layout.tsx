@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Bricolage_Grotesque } from "next/font/google";
 import "./globals.css";
+import { Providers } from "@/components/providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -12,9 +13,15 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-heading",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
 export const metadata: Metadata = {
-  title: "ShortLink",
-  description: "Distributed URL Shortener & Analytics Platform",
+  title: "ShortLink — Distributed URL Shortener & Analytics",
+  description: "High-throughput, sub-millisecond URL redirection engine with real-time Kafka analytics.",
 };
 
 export default function RootLayout({
@@ -25,10 +32,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-background text-foreground">
-        {children}
+      <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
